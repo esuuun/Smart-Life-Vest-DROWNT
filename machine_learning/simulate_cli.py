@@ -1,11 +1,17 @@
 """
-Interactive Terminal Simulator for Smart Life Vest DROWNT (Edge AI)
+Interactive Terminal Simulator for Smart Life Vest DROWNT (Edge AI) — v2
 Kelompok 33 - Desain Proyek 2 (Teknik Komputer FTUI)
+
+PERUBAHAN DARI v1:
+- Model sekarang dilatih memakai build_dataset() dari train_model_v2.py,
+  bukan generator terpisah -> menjamin CLI simulator dan model yang
+  di-export ke ESP32 (drownt_model.h) punya karakter yang SAMA PERSIS.
+  Di v1, dua model ini diam-diam berbeda (pitch/roll di-hardcode di CLI,
+  di-random di train_model.py) -- bug ini sekarang hilang.
 """
 
 import sys
 import json
-import numpy as np
 
 # Force UTF-8 on Windows console if supported
 if sys.platform == "win32":
@@ -15,41 +21,15 @@ if sys.platform == "win32":
         pass
 
 from sklearn.ensemble import RandomForestClassifier
+from train_model import build_dataset
+
 
 def train_quick_model():
-    np.random.seed(42)
-    N = 6000
-    records = []
-    labels = []
-    for _ in range(N):
-        scenario = np.random.choice(
-            ['normal', 'water_safe', 'hypothermia', 'mild_hypoxia', 'drowning_critical', 'unconscious_facedown'], 
-            p=[0.30, 0.20, 0.12, 0.13, 0.15, 0.10]
-        )
-        if scenario == 'normal':
-            records.append([np.random.uniform(95, 100), np.random.uniform(65, 95), np.random.uniform(36.2, 37.5), 0, 0, 0, 0])
-            labels.append(0)
-        elif scenario == 'water_safe':
-            records.append([np.random.uniform(94, 99), np.random.uniform(80, 115), np.random.uniform(35.0, 36.8), 1, 10, -10, 0])
-            labels.append(1)
-        elif scenario == 'hypothermia':
-            temp = np.random.uniform(28.0, 34.5)
-            fd = 0 if np.random.rand() > 0.3 else 1
-            records.append([np.random.uniform(90, 96), np.random.uniform(45, 75), temp, 1, 0, 0, fd])
-            labels.append(2 if temp < 32.0 or fd == 1 else 1)
-        elif scenario == 'mild_hypoxia':
-            records.append([np.random.uniform(89, 93), np.random.uniform(100, 135), np.random.uniform(34.8, 36.5), 1, 0, 0, 0])
-            labels.append(1)
-        elif scenario == 'drowning_critical':
-            records.append([np.random.uniform(70, 88), np.random.uniform(130, 160), np.random.uniform(31, 35.5), 1, 0, 0, 1 if np.random.rand() > 0.3 else 0])
-            labels.append(2)
-        elif scenario == 'unconscious_facedown':
-            records.append([np.random.uniform(70, 85), np.random.uniform(40, 80), np.random.uniform(30, 35), 1, -45, 160, 1])
-            labels.append(2)
-            
+    X, y = build_dataset(n=6000, seed=42)
     clf = RandomForestClassifier(n_estimators=15, max_depth=6, random_state=42)
-    clf.fit(records, labels)
+    clf.fit(X, y)
     return clf
+
 
 clf = train_quick_model()
 
@@ -60,6 +40,7 @@ PRESETS = {
     "4": ("Hipoksia Akut Drowning (SpO2 78%)", [78.0, 145.0, 34.2, 1, -20.0, 30.0, 0]),
     "5": ("Pingsan Tengkurap (Face-Down)", [74.0, 48.0, 33.0, 1, -45.0, 160.0, 1]),
 }
+
 
 def display_oled_ascii(d):
     print("+------------------------------------------------------------+")
@@ -72,11 +53,14 @@ def display_oled_ascii(d):
     print(f"|  P(AMAN): {d['p_safe']:>4.1f}% | P(WASPADA): {d['p_warn']:>4.1f}% | P(KRITIS): {d['p_crit']:>4.1f}%  |")
     print("+------------------------------------------------------------+")
 
+
 def run_simulation(feat):
     probs = clf.predict_proba([feat])[0]
-    p_safe, p_warn, p_crit = probs[0]*100, probs[1]*100, probs[2]*100
-    risk = int(probs[1]*50.0 + probs[2]*100.0)
-    
+    p_safe, p_warn, p_crit = probs[0] * 100, probs[1] * 100, probs[2] * 100
+    risk = int(probs[1] * 50.0 + probs[2] * 100.0)
+
+    # CATATAN: threshold di bawah ini masih tebakan awal (belum dikalibrasi
+    # dari data validasi nyata). Perlu direvisi setelah ada data semi-real.
     if probs[2] > 0.45 or risk >= 70:
         status = "KRITIS"
         buzzer = "[ALARM AKTIF] BIP CEPAT 2200 Hz"
@@ -89,7 +73,7 @@ def run_simulation(feat):
         status = "AMAN"
         buzzer = "[SILENT] Mati"
         led = "[HIJAU] Menyala tenang"
-        
+
     data = {
         "status": status,
         "risk_score": risk,
@@ -100,15 +84,14 @@ def run_simulation(feat):
         "face_down": bool(feat[6]),
         "p_safe": p_safe,
         "p_warn": p_warn,
-        "p_crit": p_crit
+        "p_crit": p_crit,
     }
-    
+
     print("\n[TAMPILAN DISPLAY OLED LIFE VEST]:")
     display_oled_ascii(data)
     print(f"Status Aktuator : Buzzer -> {buzzer}")
     print(f"                  LED    -> {led}")
-    
-    # Telemetri SAR
+
     payload = {
         "device_id": "VEST-33-01",
         "ml_status": status,
@@ -116,11 +99,12 @@ def run_simulation(feat):
         "ai_probabilities": {"safe": f"{p_safe:.1f}%", "warning": f"{p_warn:.1f}%", "critical": f"{p_crit:.1f}%"},
         "vitals": {"spo2": int(feat[0]), "hr": int(feat[1]), "temp_c": round(feat[2], 1)},
         "environment": {"in_water": bool(feat[3]), "face_down": bool(feat[6])},
-        "gps": {"lat": -6.2088, "lon": 106.8456}
+        "gps": {"lat": -6.2088, "lon": 106.8456},
     }
     print("\n[TELEMETRI SAR (JSON DISPATCH)]:")
     print(json.dumps(payload, indent=2))
     print()
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] in PRESETS:
