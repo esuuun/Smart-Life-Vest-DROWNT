@@ -1,0 +1,319 @@
+/* =============================================================================
+   DROWNT DESIGN SYSTEM
+   Theme: Light Modern Minimalist (Deep Forest Green & Sage)
+   Palet Warna diselaraskan dengan Presentasi PPT UAS Kelompok 33 FTUI
+   ============================================================================= */
+
+:root, [data-theme="light"] {
+  /* Surface & Backgrounds (Light Minimalist) */
+  --bg-app: #F5F7F6;
+  --bg-surface: #FFFFFF;
+  --bg-surface-hover: #F0F4F1;
+  --bg-surface-elevated: #FFFFFF;
+  --bg-surface-glass: rgba(255, 255, 255, 0.92);
+
+  /* Forest Green Brand Gradients & Accents (From PPT UAS) */
+  --primary-deep: #1B5141;
+  --primary-emerald: #288661;
+  --primary-sage: #5BA67B;
+  --accent-mint: #1B5141;           /* Readable high-contrast text in light mode */
+  --accent-mint-badge: #1B5141;
+  --accent-mint-soft: #E5F3EB;      /* Soft sage pill background */
+  --accent-pine: #226F53;
+
+  /* Borders */
+  --border-subtle: #DFE8E3;
+  --border-medium: #CAD9D0;
+  --border-active: #288661;
+
+  /* Status Colors */
+  --status-safe: #1B5141;
+  --status-safe-bg: #E7F6ED;
+  --status-safe-border: #9AD3B0;
+
+  --status-warn: #C27008;
+  --status-warn-bg: #FFF5E5;
+  --status-warn-border: #FFD4A1;
+
+  --status-crit: #BF3711;           /* Danger red from PPT UAS #BF3711 */
+  --status-crit-bright: #BF3711;
+  --status-crit-bg: #FEECE8;
+  --status-crit-border: #F8B4A6;
+
+  /* Typography */
+  --text-primary: #0F2118;          /* High contrast deep black-green */
+  --text-secondary: #3D5447;
+  --text-muted: #6B8374;
+  --text-contrast: #FFFFFF;
+
+  /* Elevation Shadows */
+  --shadow-sm: 0 1px 3px rgba(15, 33, 24, 0.05), 0 1px 2px rgba(15, 33, 24, 0.03);
+  --shadow-md: 0 4px 14px rgba(15, 33, 24, 0.07);
+  --shadow-glow-safe: 0 0 14px rgba(40, 134, 97, 0.18);
+  --shadow-glow-crit: 0 0 18px rgba(191, 55, 17, 0.25);
+
+  /* Layout */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+/* Optional Dark Mode override */
+[data-theme="dark"] {
+  --bg-app: #080C0A;
+  --bg-surface: #0F1612;
+  --bg-surface-hover: #151F1A;
+  --bg-surface-elevated: #18231E;
+  --bg-surface-glass: rgba(15, 22, 18, 0.85);
+  --primary-deep: #1B5141;
+  --primary-emerald: #288661;
+  --primary-sage: #5BA67B;
+  --accent-mint: #B8E2BA;
+  --accent-mint-badge: #B8E2BA;
+  --accent-mint-soft: rgba(184, 226, 186, 0.12);
+  --accent-pine: #226F53;
+  --border-subtle: #1C2B22;
+  --border-medium: #273D30;
+  --border-active: #288661;
+  --status-safe: #288661;
+  --status-safe-bg: rgba(40, 134, 97, 0.15);
+  --status-safe-border: rgba(40, 134, 97, 0.35);
+  --status-warn: #D9822B;
+  --status-warn-bg: rgba(217, 130, 43, 0.15);
+  --status-warn-border: rgba(217, 130, 43, 0.35);
+  --status-crit: #BF3711;
+  --status-crit-bright: #E5484D;
+  --status-crit-bg: rgba(191, 55, 17, 0.18);
+  --status-crit-border: rgba(191, 55, 17, 0.5);
+  --text-primary: #EEF7F1;
+  --text-secondary: #94A89E;
+  --text-muted: #577062;
+  --text-contrast: #080C0A;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Base Resets */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Monospace Metrics Utility */
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Layout Containers */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding: 1.25rem 1.5rem 2rem;
+  max-width: 1720px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Card Component */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--border-medium);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.card-title {
+  font-size: 0.825rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.badge-safe {
+  background: var(--status-safe-bg);
+  border: 1px solid var(--status-safe-border);
+  color: var(--status-safe);
+}
+
+.badge-warn {
+  background: var(--status-warn-bg);
+  border: 1px solid var(--status-warn-border);
+  color: var(--status-warn);
+}
+
+.badge-crit {
+  background: var(--status-crit-bg);
+  border: 1px solid var(--status-crit-border);
+  color: var(--status-crit-bright);
+  animation: pulse-crit 1.5s infinite;
+}
+
+.badge-neutral {
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+/* Custom Minimalist Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.95rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.btn-primary {
+  background: var(--primary-deep);
+  color: #FFFFFF;
+  border-color: var(--primary-emerald);
+}
+
+.btn-primary:hover {
+  background: var(--primary-emerald);
+}
+
+.btn-outline {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+}
+
+.btn-outline:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--primary-sage);
+}
+
+.btn-danger {
+  background: var(--status-crit-bg);
+  border-color: var(--status-crit-border);
+  color: var(--status-crit-bright);
+}
+
+.btn-danger:hover {
+  background: #FBD7D0;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-sage);
+}
+
+/* Keyframe Animations */
+@keyframes pulse-crit {
+  0% {
+    box-shadow: 0 0 0 0 rgba(191, 55, 17, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(191, 55, 17, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(191, 55, 17, 0);
+  }
+}
+
+@keyframes pulse-radar {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.9;
+  }
+}
+
+/* Leaflet Map Light Styling */
+.leaflet-container {
+  background: #E8ECE9 !important;
+  font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper {
+  background: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-medium) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.leaflet-popup-tip {
+  background: var(--bg-surface) !important;
+}
