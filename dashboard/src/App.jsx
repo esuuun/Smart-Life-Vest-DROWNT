@@ -13,14 +13,13 @@ const initialTelemetry = {
   seq: 0,
   timestamp: new Date().toLocaleTimeString(),
   status: 'AMAN',
-  riskScore: 6,
-  spo2: 98,
-  heartRate: 74,
-  temperature: 36.6,
+  riskScore: 0,
+  spo2: 0,
+  heartRate: 0,
+  waistWater: 0,
+  neckWater: 0,
+  isSubmerged: false,
   inWater: false,
-  isFaceDown: false,
-  pitch: 2.1,
-  roll: -1.4,
   latitude: -6.3627,
   longitude: 106.8272,
   satellites: 9,
@@ -36,12 +35,34 @@ export default function App() {
   const [connectionState, setConnectionState] = useState({ connected: false });
   const [isSimulatorActive, setIsSimulatorActive] = useState(false);
   const [currentScenario, setCurrentScenario] = useState('NORMAL');
-  const [isMuted, setIsMuted] = useState(true); // Default muted to avoid annoying loud sound initially
+  const [isMuted, setIsMuted] = useState(false); // Default: Suara alarm aktif!
   const [theme, setTheme] = useState('light');  // Default: Light Mode
+  const alarmAudioRef = useRef(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // Siapkan elemen Audio untuk alarm.mp4
+  useEffect(() => {
+    const audio = new Audio('/alarm.mp4');
+    audio.loop = true;
+    alarmAudioRef.current = audio;
+
+    return () => {
+      audio.pause();
+    };
+  }, []);
+
+  // Sync mute state ke elemen audio
+  useEffect(() => {
+    if (alarmAudioRef.current) {
+      alarmAudioRef.current.muted = isMuted;
+      if (isMuted) {
+        alarmAudioRef.current.pause();
+      }
+    }
+  }, [isMuted]);
 
   const handleToggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
@@ -49,40 +70,32 @@ export default function App() {
 
   const audioCtxRef = useRef(null);
 
-  // Fungsi Audio Alarm menggunakan Web Audio API (Tanpa butuh file MP3 eksternal)
-  const playAlertTone = (type) => {
+  // Ping warning lembut untuk status WASPADA (Web Audio API)
+  const playWarningTone = () => {
     if (isMuted) return;
-
     try {
       if (!audioCtxRef.current) {
         audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       }
       const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
+      if (ctx.state === 'suspended') ctx.resume();
 
+      const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(720, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+
       osc.connect(gain);
       gain.connect(ctx.destination);
 
-      if (type === 'KRITIS') {
-        // Dual-tone High Alert Beep
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        osc.frequency.setValueAtTime(659, ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.35);
-      } else if (type === 'WASPADA') {
-        // Single Attention Ping
-        osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.25);
-      }
+      osc.start(now);
+      osc.stop(now + 0.22);
     } catch (e) {
       console.warn('Audio Context error:', e);
     }
@@ -106,11 +119,25 @@ export default function App() {
     // Tambah ke riwayat log
     setLogs((prev) => [...prev, newData]);
 
-    // Bunyikan nada alert jika bahaya
+    // Putar file alarm.mp4 jika status KRITIS
     if (newData.status === 'KRITIS') {
-      playAlertTone('KRITIS');
-    } else if (newData.status === 'WASPADA') {
-      playAlertTone('WASPADA');
+      if (!isMuted && alarmAudioRef.current) {
+        if (alarmAudioRef.current.paused) {
+          alarmAudioRef.current.currentTime = 0;
+          alarmAudioRef.current.play().catch((err) => {
+            console.log('Autoplay audio dicegah oleh browser, tunggu klik user:', err);
+          });
+        }
+      }
+    } else {
+      // Jika status turun dari KRITIS ke WASPADA/AMAN -> matikan sirine mp4
+      if (alarmAudioRef.current && !alarmAudioRef.current.paused) {
+        alarmAudioRef.current.pause();
+        alarmAudioRef.current.currentTime = 0;
+      }
+      if (newData.status === 'WASPADA') {
+        playWarningTone();
+      }
     }
   };
 

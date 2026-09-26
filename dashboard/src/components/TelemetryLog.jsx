@@ -73,11 +73,10 @@ export default function TelemetryLog({ logs, onClearLogs }) {
                 <span style={{ color: 'var(--text-muted)' }}>[{entry.timestamp}]</span>
                 <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>#{entry.seq}</span>
                 <span style={{ color, fontWeight: 700 }}>{entry.status}</span>
-                <span>SpO2:{entry.spo2}%</span>
-                <span>HR:{entry.heartRate}</span>
-                <span>T:{entry.temperature}&deg;C</span>
-                <span>Water:{entry.inWater ? '1' : '0'}</span>
-                <span>FaceDown:{entry.isFaceDown ? '1' : '0'}</span>
+                <span>SpO2:{entry.spo2 > 0 ? `${entry.spo2}%` : '--'}</span>
+                <span>HR:{entry.heartRate > 0 ? entry.heartRate : '--'}</span>
+                <span>Pinggang:{entry.waistWater ?? 0}%</span>
+                <span>Leher:{entry.neckWater ?? 0}%</span>
                 <span style={{ color: 'var(--text-muted)', marginLeft: 'auto' }}>
                   {entry.latitude.toFixed(4)}, {entry.longitude.toFixed(4)}
                 </span>
