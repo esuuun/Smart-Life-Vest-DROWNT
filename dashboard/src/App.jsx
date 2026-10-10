@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import StatsBar from './components/StatsBar';
-import SignalCharts from './components/SignalCharts';
-import LiveMap from './components/LiveMap';
-import MLDiagnostics from './components/MLDiagnostics';
-import TelemetryLog from './components/TelemetryLog';
-import SimulatorControls from './components/SimulatorControls';
+import OverviewPage from './components/OverviewPage';
+import ReportPage from './components/ReportPage';
+import HistoryPage from './components/HistoryPage';
+import DevicesPage from './components/DevicesPage';
+import SettingsPage from './components/SettingsPage';
 import { serialService } from './services/serialService';
 import { bleService } from './services/bleService';
 
@@ -31,6 +31,10 @@ const initialTelemetry = {
 };
 
 export default function App() {
+  const [activePage, setActivePage] = useState('overview');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   const [telemetry, setTelemetry] = useState(initialTelemetry);
   const [breadcrumbs, setBreadcrumbs] = useState([[-6.3627, 106.8272]]);
   const [logs, setLogs] = useState([]);
@@ -103,7 +107,7 @@ export default function App() {
     }
   };
 
-  // Handler penerimaan data baru (baik dari Serial USB maupun Simulator)
+  // Handler penerimaan data baru (baik dari Serial USB, BLE, maupun Simulator)
   const handleDataReceived = (newData) => {
     setTelemetry(newData);
 
@@ -223,14 +227,15 @@ export default function App() {
       'Risk_Score',
       'SpO2_Percent',
       'Heart_Rate_BPM',
-      'Temp_Celcius',
+      'Water_Waist_Percent',
+      'Water_Neck_Percent',
       'In_Water',
-      'Is_FaceDown',
-      'Pitch_Deg',
-      'Roll_Deg',
       'Latitude',
       'Longitude',
-      'Satellites'
+      'Satellites',
+      'Prob_Aman',
+      'Prob_Waspada',
+      'Prob_Kritis'
     ];
 
     const csvRows = logs.map((l) => [
@@ -241,14 +246,15 @@ export default function App() {
       l.riskScore,
       l.spo2,
       l.heartRate,
-      l.temperature,
+      l.waistWater != null ? l.waistWater : '',
+      l.neckWater != null ? l.neckWater : '',
       l.inWater ? 1 : 0,
-      l.isFaceDown ? 1 : 0,
-      l.pitch,
-      l.roll,
       l.latitude,
       l.longitude,
-      l.satellites
+      l.satellites,
+      l.probAman,
+      l.probWaspada,
+      l.probKritis
     ]);
 
     const csvContent = [headers.join(','), ...csvRows.map((r) => r.join(','))].join('\n');
@@ -263,67 +269,94 @@ export default function App() {
   };
 
   return (
-    <div className="app-container">
-      {/* Header Bar */}
-      <Header
+    <div className="app-shell">
+      {/* 1. Global Navigation Sidebar */}
+      <Sidebar
+        activePage={activePage}
+        setActivePage={setActivePage}
+        isCollapsed={isSidebarCollapsed}
+        setIsCollapsed={setIsSidebarCollapsed}
         connectionState={connectionState}
-        onConnectSerial={handleConnectSerial}
-        onDisconnectSerial={handleDisconnectSerial}
-        onConnectBLE={handleConnectBLE}
-        onDisconnectBLE={handleDisconnectBLE}
-        isSimulatorActive={isSimulatorActive}
-        onToggleSimulator={handleToggleSimulator}
-        isMuted={isMuted}
-        onToggleMute={() => setIsMuted(!isMuted)}
-        onExportCSV={handleExportCSV}
         currentStatus={telemetry.status}
         packetCount={logs.length}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
+        isMobileOpen={isMobileSidebarOpen}
+        setIsMobileOpen={setIsMobileSidebarOpen}
       />
 
-      {/* Main Dashboard Layout */}
-      <main className="main-content">
-        {/* Top KPI Metrics HUD */}
-        <StatsBar telemetry={telemetry} />
-
-        {/* Real-time Filtered PPG Waveform & 2-Minute Trend Charts */}
-        <SignalCharts
-          telemetry={telemetry}
-          isConnected={connectionState.connected}
+      {/* 2. Main Viewport Container */}
+      <div className={`main-viewport ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+        {/* Top Header Bar */}
+        <Header
+          activePage={activePage}
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          connectionState={connectionState}
+          onConnectSerial={handleConnectSerial}
+          onDisconnectSerial={handleDisconnectSerial}
+          onConnectBLE={handleConnectBLE}
+          onDisconnectBLE={handleDisconnectBLE}
           isSimulatorActive={isSimulatorActive}
+          onToggleSimulator={handleToggleSimulator}
+          isMuted={isMuted}
+          onToggleMute={() => setIsMuted(!isMuted)}
+          onExportCSV={handleExportCSV}
+          currentStatus={telemetry.status}
+          packetCount={logs.length}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
         />
 
-        {/* Demo Simulator Controls (Active when user clicks Demo Simulator) */}
-        {isSimulatorActive && (
-          <SimulatorControls
-            currentScenario={currentScenario}
-            onSelectScenario={handleSelectScenario}
-          />
-        )}
+        {/* Dynamic Page Views */}
+        <main className="content-area">
+          {activePage === 'overview' && (
+            <OverviewPage
+              telemetry={telemetry}
+              breadcrumbs={breadcrumbs}
+              logs={logs}
+              onClearLogs={() => setLogs([])}
+              connectionState={connectionState}
+              isSimulatorActive={isSimulatorActive}
+              currentScenario={currentScenario}
+              onSelectScenario={handleSelectScenario}
+              onSetPresetLocation={handleSetPresetLocation}
+              theme={theme}
+            />
+          )}
 
-        {/* Split Grid: Live Map (Left) & Diagnostics / Log (Right) */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1.45fr) minmax(0, 1fr)',
-          gap: '1.25rem',
-          flex: 1
-        }}>
-          {/* Left Column: Live Tactical Map */}
-          <LiveMap
-            telemetry={telemetry}
-            breadcrumbs={breadcrumbs}
-            onSetPresetLocation={handleSetPresetLocation}
-            theme={theme}
-          />
+          {activePage === 'reports' && (
+            <ReportPage
+              telemetry={telemetry}
+              logs={logs}
+              currentScenario={currentScenario}
+              onExportCSV={handleExportCSV}
+            />
+          )}
 
-          {/* Right Column: ML Engine Breakdown & Real-Time Log */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <MLDiagnostics telemetry={telemetry} />
-            <TelemetryLog logs={logs} onClearLogs={() => setLogs([])} />
-          </div>
-        </div>
-      </main>
+          {activePage === 'history' && (
+            <HistoryPage
+              logs={logs}
+              onClearLogs={() => setLogs([])}
+              onExportCSV={handleExportCSV}
+            />
+          )}
+
+          {activePage === 'devices' && (
+            <DevicesPage
+              telemetry={telemetry}
+              connectionState={connectionState}
+            />
+          )}
+
+          {activePage === 'settings' && (
+            <SettingsPage
+              isMuted={isMuted}
+              onToggleMute={() => setIsMuted(!isMuted)}
+              theme={theme}
+              onToggleTheme={handleToggleTheme}
+              currentStatus={telemetry.status}
+            />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
