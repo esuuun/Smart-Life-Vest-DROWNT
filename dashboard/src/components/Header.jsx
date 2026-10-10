@@ -17,6 +17,8 @@ export default function Header({
   connectionState,
   onConnectSerial,
   onDisconnectSerial,
+  onConnectBLE,
+  onDisconnectBLE,
   isSimulatorActive,
   onToggleSimulator,
   isMuted,
@@ -132,18 +134,31 @@ export default function Header({
           <span>{isSimulatorActive ? 'Stop Sim' : 'Demo Simulator'}</span>
         </button>
 
-        {/* Web Serial Connect */}
-        {connectionState.connected ? (
+        {/* Web Serial Connect (USB) */}
+        {connectionState.connected && !connectionState.ble ? (
           <button onClick={onDisconnectSerial} className="btn btn-outline" style={{ borderColor: 'var(--status-crit-border)' }}>
             <Usb size={15} color="var(--status-crit-bright)" />
-            <span>Disconnect</span>
+            <span>Putus USB</span>
           </button>
-        ) : (
-          <button onClick={onConnectSerial} className="btn btn-primary">
+        ) : !connectionState.connected ? (
+          <button onClick={onConnectSerial} className="btn btn-outline" title="Sambungkan lewat kabel data USB">
             <Usb size={15} />
-            <span>Connect ESP32</span>
+            <span>USB</span>
           </button>
-        )}
+        ) : null}
+
+        {/* Web Bluetooth Connect (BLE Wireless) */}
+        {connectionState.connected && connectionState.ble ? (
+          <button onClick={onDisconnectBLE} className="btn btn-outline" style={{ borderColor: 'var(--status-crit-border)' }}>
+            <Radio size={15} color="var(--status-crit-bright)" />
+            <span>Putus BLE</span>
+          </button>
+        ) : !connectionState.connected ? (
+          <button onClick={onConnectBLE} className="btn btn-primary" title="Sambungkan nirkabel lewat Bluetooth (ESP32 colok power/laptop mana saja)">
+            <Radio size={15} />
+            <span>Bluetooth (BLE)</span>
+          </button>
+        ) : null}
 
         {/* Theme Toggle (Light / Dark) */}
         <button

@@ -7,6 +7,7 @@ import MLDiagnostics from './components/MLDiagnostics';
 import TelemetryLog from './components/TelemetryLog';
 import SimulatorControls from './components/SimulatorControls';
 import { serialService } from './services/serialService';
+import { bleService } from './services/bleService';
 
 // Initial Mock Telemetry State (Titik awal: Danau Kenanga Rektorat UI Depok)
 const initialTelemetry = {
@@ -160,6 +161,26 @@ export default function App() {
     await serialService.disconnect(setConnectionState);
   };
 
+  // Koneksi Nirkabel Web Bluetooth (BLE)
+  const handleConnectBLE = async () => {
+    try {
+      if (isSimulatorActive) {
+        serialService.stopSimulator();
+        setIsSimulatorActive(false);
+      }
+      await bleService.connect(handleDataReceived, setConnectionState);
+    } catch (err) {
+      console.error('BLE connect error:', err);
+      if (err.name !== 'NotFoundError') {
+        alert('Koneksi Bluetooth Gagal: ' + err.message);
+      }
+    }
+  };
+
+  const handleDisconnectBLE = async () => {
+    await bleService.disconnect(setConnectionState);
+  };
+
   // Simulator Toggle & Scenario Change
   const handleToggleSimulator = () => {
     if (isSimulatorActive) {
@@ -248,6 +269,8 @@ export default function App() {
         connectionState={connectionState}
         onConnectSerial={handleConnectSerial}
         onDisconnectSerial={handleDisconnectSerial}
+        onConnectBLE={handleConnectBLE}
+        onDisconnectBLE={handleDisconnectBLE}
         isSimulatorActive={isSimulatorActive}
         onToggleSimulator={handleToggleSimulator}
         isMuted={isMuted}
