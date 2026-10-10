@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import StatsBar from './components/StatsBar';
+import SignalCharts from './components/SignalCharts';
 import LiveMap from './components/LiveMap';
 import MLDiagnostics from './components/MLDiagnostics';
 import TelemetryLog from './components/TelemetryLog';
@@ -262,6 +263,13 @@ export default function App() {
       <main className="main-content">
         {/* Top KPI Metrics HUD */}
         <StatsBar telemetry={telemetry} />
+
+        {/* Real-time Filtered PPG Waveform & 2-Minute Trend Charts */}
+        <SignalCharts
+          telemetry={telemetry}
+          isConnected={connectionState.connected}
+          isSimulatorActive={isSimulatorActive}
+        />
 
         {/* Demo Simulator Controls (Active when user clicks Demo Simulator) */}
         {isSimulatorActive && (
