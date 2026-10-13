@@ -5,6 +5,7 @@ import LiveMap from './LiveMap';
 import MLDiagnostics from './MLDiagnostics';
 import TelemetryLog from './TelemetryLog';
 import SimulatorControls from './SimulatorControls';
+import PingerPanel from './PingerPanel';
 
 export default function OverviewPage({
   telemetry,
@@ -54,6 +55,18 @@ export default function OverviewPage({
           <TelemetryLog logs={logs} onClearLogs={onClearLogs} />
         </div>
       </div>
+
+      {/* 5. Acoustic Pinger: kanal terakhir saat RF tidak lagi menembus air.
+             Lebar penuh karena panel ini punya layout dua kolom sendiri. */}
+      <PingerPanel
+        telemetry={{
+          submerged: telemetry?.vit?.sub === 1,
+          loraOk: connectionState?.connected,
+          lat: telemetry?.gps?.lat,
+          lon: telemetry?.gps?.lng,
+          fixTime: Date.now(),
+        }}
+      />
     </div>
   );
 }
